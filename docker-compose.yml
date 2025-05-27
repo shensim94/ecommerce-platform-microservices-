@@ -1,33 +1,137 @@
 version: '3.8'
 
 services:
+  discovery-server:
+    build: ./discovery-server
+    ports:
+      - "8761:8761"
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "9090:9090"
+    depends_on:
+      - discovery-server
+    volumes: # For API Gateway, if you want live reload
+      - ./api-gateway:/app
+    # You might need to override entrypoint here too if it gives the same error
+    entrypoint: ["java", "-jar", "/app/target/api-gateway-0.0.1-SNAPSHOT.jar"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=development # or docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+
   user-service:
     build: ./user-service
     ports:
-      - "8081:8080"
+      - "8081:8080" # Host:Container
+    volumes:
+      # This mount is for live-reloading with Spring Boot DevTools.
+      # It makes your local ./user-service directory available as /app in the container.
+      - ./user-service:/app
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      # Spring Boot automatically uses these for DataSource config
+      - SPRING_PROFILES_ACTIVE=development # or docker
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/users_db
       - SPRING_DATASOURCE_USERNAME=user
       - SPRING_DATASOURCE_PASSWORD=password
-      # Optional: Controls Hibernate schema generation (use 'validate' or 'none' in prod)
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    # THIS IS THE FIX for "Unable to access jarfile /app/app.jar" WHEN USING THE VOLUME MOUNT:
+    # Override the entrypoint to run the JAR from your host's target directory (via the mount)
+    # Replace 'user-service-0.0.1-SNAPSHOT.jar' with the actual name of your JAR
+    entrypoint: ["java", "-jar", "/app/target/user-service-0.0.1-SNAPSHOT.jar"]
     depends_on:
-      - db # Ensures db starts before user-service
+      - db
+      - discovery-server
 
-  # ... other services like product-catalog-service ...
+  product-catalog-service:
+    build: ./product-catalog-service
+    ports:
+      - "8082:8080" # Host:Container
+    volumes:
+      - ./product-catalog-service:/app
+    environment:
+      - SPRING_PROFILES_ACTIVE=development # or docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      # Add database env vars if this service uses one
+    # Apply the same entrypoint fix, adjusting the JAR name:
+    entrypoint: ["java", "-jar", "/app/target/product-catalog-service-0.0.1-SNAPSHOT.jar"]
+    depends_on:
+      - discovery-server
+      # - some-other-db # if it uses one
 
-  db: # PostgreSQL service definition
+  notification-service:
+    build: ./notification-service
+    ports:
+      - "8083:8080" # Host:Container
+    volumes:
+      - ./notification-service:/app
+    environment:
+      - SPRING_PROFILES_ACTIVE=development # or docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      # Add database env vars if this service uses one
+    # Apply the same entrypoint fix, adjusting the JAR name:
+    entrypoint: [ "java", "-jar", "/app/target/notification-service-0.0.1-SNAPSHOT.jar" ]
+    depends_on:
+      - discovery-server
+      # - some-other-db # if it uses one
+
+  order-service:
+    build: ./order-service
+    ports:
+      - "8084:8080" # Host:Container
+    volumes:
+      - ./order-service:/app
+    environment:
+      - SPRING_PROFILES_ACTIVE=development # or docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      # Add database env vars if this service uses one
+    # Apply the same entrypoint fix, adjusting the JAR name:
+    entrypoint: [ "java", "-jar", "/app/target/order-service-0.0.1-SNAPSHOT.jar" ]
+    depends_on:
+      - discovery-server
+      # - some-other-db # if it uses one
+
+  payment-service:
+    build: ./payment-service
+    ports:
+      - "8085:8080" # Host:Container
+    volumes:
+      - ./payment-service:/app
+    environment:
+      - SPRING_PROFILES_ACTIVE=development # or docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      # Add database env vars if this service uses one
+    # Apply the same entrypoint fix, adjusting the JAR name:
+    entrypoint: [ "java", "-jar", "/app/target/payment-service-0.0.1-SNAPSHOT.jar" ]
+    depends_on:
+      - discovery-server
+      # - some-other-db # if it uses one
+
+  shopping-cart-service:
+    build: ./shopping-cart-service
+    ports:
+      - "8086:8080" # Host:Container
+    volumes:
+      - ./shopping-cart-service:/app
+    environment:
+      - SPRING_PROFILES_ACTIVE=development # or docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      # Add database env vars if this service uses one
+    # Apply the same entrypoint fix, adjusting the JAR name:
+    entrypoint: [ "java", "-jar", "/app/target/shopping-cart-service-0.0.1-SNAPSHOT.jar" ]
+    depends_on:
+      - discovery-server
+      # - some-other-db # if it uses one
+  db:
     image: postgres:14-alpine
     environment:
       POSTGRES_DB: users_db
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
     volumes:
-      - postgres_data:/var/lib/postgresql/data # Persist data
+      - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5433:5432" # Optional: Expose DB port to host for direct access/debugging
+      - "5433:5432"
 
 volumes:
-  postgres_data: # Define the named volume for persistence
+  postgres_data: {}

@@ -5,8 +5,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map; // Or create a simple UserDTO class
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 public class UserController {
+
+    @GetMapping
+    public ResponseEntity<?> getAllUsers() {
+        return ResponseEntity.ok(Map.of("message", "User service working!"));
+    }
 
     // Simple placeholder for registration
     @PostMapping

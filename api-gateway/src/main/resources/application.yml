@@ -1,0 +1,78 @@
+server:
+  port: 9090 # Internal port the API Gateway runs on
+
+spring:
+  application:
+    name: api-gateway # Name to register with Eureka
+
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true # Enables lookup of services via DiscoveryClient (Eureka)
+          # lower-case-service-id: true # Set to true if your service IDs in Eureka are lowercase and you want to use lowercase in lb:// uris
+      routes:
+        # Route to User Service
+        - id: user-service-route
+          uri: lb://USER-SERVICE # Uses service ID from Eureka (typically uppercase)
+          predicates:
+            - Path=/api/users/** # Incoming paths to match
+
+        # Route to Product Catalog Service
+        - id: product-service-route
+          uri: lb://PRODUCT-CATALOG-SERVICE
+          predicates:
+            - Path=/api/products/**
+
+        # Route to Notification Service
+        - id: notification-service-route
+          uri: lb://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/api/notifications/**
+
+        # Route to Order Service
+        - id: order-service-route
+          uri: lb://ORDER-SERVICE
+          predicates:
+            - Path=/api/orders/**
+
+        # Route to Payment Service
+        - id: payment-service-route
+          uri: lb://PAYMENT-SERVICE
+          predicates:
+            - Path=/api/payments/**
+
+        # Route to Shopping Cart Service
+        - id: shopping-cart-service-route
+          uri: lb://SHOPPING-CART-SERVICE
+          predicates:
+            - Path=/api/cart/**
+
+        # Add routes for other microservices here
+        # - id: order-service-route
+        #   uri: lb://ORDER-SERVICE
+        #   predicates:
+        #     - Path=/api/orders/**
+        #   filters:
+        #     - name: RewritePath
+        #       args:
+        #         regexp: /api/orders/(?<segment>.*)
+        #         replacement: /orders/#{segment}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server-1:8761/eureka/
+    register-with-eureka: true # Default is true, gateway should register
+    fetch-registry: true     # Default is true, gateway needs to fetch registry
+  instance:
+    prefer-ip-address: true # Can be helpful in Docker environments
+
+# Logging levels for debugging gateway routing (as discussed)
+logging:
+  level:
+    org.springframework.cloud.gateway: TRACE
+    reactor.netty.http.client: DEBUG # Or TRACE
+    org.springframework.web.reactive.function.client: TRACE
+    org.springframework.cloud.loadbalancer: TRACE
+    org.springframework.web.reactive.DispatcherHandler: DEBUG # Or TRACE
