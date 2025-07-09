@@ -1,5 +1,13 @@
 package com.sshen_ecommerce.user_service.controller;
 
+import com.sshen_ecommerce.user_service.dto.AuthResponseDTO;
+import com.sshen_ecommerce.user_service.dto.LoginDTO;
+import com.sshen_ecommerce.user_service.dto.UserDTO;
+import com.sshen_ecommerce.user_service.dto.UserRegistrationDTO;
+import com.sshen_ecommerce.user_service.service.UserService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map; // Or create a simple UserDTO class
@@ -8,25 +16,23 @@ import java.util.Map; // Or create a simple UserDTO class
 @RequestMapping("/api/users")
 public class UserController {
 
+    @Autowired
+    private UserService userService;
+
     @GetMapping
     public ResponseEntity<?> getAllUsers() {
         return ResponseEntity.ok(Map.of("message", "User service working!"));
     }
 
-    // Simple placeholder for registration
-    @PostMapping
-    public ResponseEntity<?> registerUser(@RequestBody Map<String, String> userPayload) {
-        // In a real scenario: Validate input, call a service layer, save to DB
-        System.out.println("Registering user: " + userPayload.get("email"));
-
-        // Just return a success message for now
-        return ResponseEntity.ok(Map.of("message", "User registration placeholder success"));
+    @PostMapping("/register")
+    public ResponseEntity<UserDTO> registerUser(@Valid @RequestBody UserRegistrationDTO registrationDTO) {
+        UserDTO user = userService.registerUser(registrationDTO);
+        return new ResponseEntity<>(user, HttpStatus.CREATED);
     }
 
-    // Simple placeholder for getting a user (will fail until implemented)
-    @GetMapping("/{userId}")
-    public ResponseEntity<?> getUser(@PathVariable String userId) {
-        // In a real scenario: Call service layer to fetch user
-        return ResponseEntity.ok(Map.of("userId", userId, "message", "User details placeholder"));
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody LoginDTO loginDTO) {
+        AuthResponseDTO authResponse = userService.authenticate(loginDTO);
+        return ResponseEntity.ok(authResponse);
     }
 }
